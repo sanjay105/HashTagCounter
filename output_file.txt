@@ -1,0 +1,2 @@
+saturday,sunday,monday
+saturday,sunday,reading,friday,monday
