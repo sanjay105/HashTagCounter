@@ -211,12 +211,14 @@ string topXNodes(int x){//returns a string with top x hashtags comma seperated
     vector<pair<string,int> > ele;
     for(int i=0;i<x;i++){
         pair<string,int> p;
-        p.first=maxPtr->hash_tag;
-        p.second=maxPtr->value;
-        ele.push_back(p);
-        removeMax();//removes the most popular hashtag
+	if(maxPtr!=NULL){
+        	p.first=maxPtr->hash_tag;
+        	p.second=maxPtr->value;
+        	ele.push_back(p);
+        	removeMax();//removes the most popular hashtag
+	}else{break;}
     }
-    for(int i=0;i<x;i++){
+    for(int i=0;i<ele.size();i++){
         if(res!=""){
             res+=',';
         }
