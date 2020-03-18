@@ -294,7 +294,6 @@ int main(int argc, char **argv)
     ofstream output;
     string s = "";
     input.open(argv[1]);
-    //input.open("input_1000.txt");
     output.open("output_file.txt");
     auto start = high_resolution_clock::now();
     while (input >> s)
