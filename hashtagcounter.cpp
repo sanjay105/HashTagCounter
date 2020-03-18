@@ -6,9 +6,7 @@
 #include <sstream>
 #include <stack>
 #include <math.h>
-#include <chrono>
 using namespace std;
-using namespace std::chrono;
 struct fib_Node
 {
     bool mark;
@@ -295,7 +293,6 @@ int main(int argc, char **argv)
     string s = "";
     input.open(argv[1]);
     output.open("output_file.txt");
-    auto start = high_resolution_clock::now();
     while (input >> s)
     {
         lines++;
@@ -327,8 +324,5 @@ int main(int argc, char **argv)
             output << topXNodes(x) << endl;
         }
     }
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<microseconds>(stop - start);
-    cout << "Time taken for execution: " << duration.count() << " microseconds" << endl;
     cout << "DONE" << endl;
 }
