@@ -12,7 +12,7 @@ for i in range(1,7):
     x=random.randint(1,10)
     if x!=10:
       a=random.randint(1,100)
-      count=random.randint(1,20)
+      count=random.randint(10,20)
       s='#'
       for k in range(count):
         b=random.randint(0,25)
