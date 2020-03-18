@@ -17,7 +17,7 @@ for i in range(1,7):
       for k in range(count):
         b=random.randint(0,25)
         s=s+chr(number+b)
-      print(s,a)
+      print s+" "+str(a)
     else:
       print(random.randint(1,20))
     i+=1
