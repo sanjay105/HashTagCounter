@@ -1,260 +1,335 @@
-#include<bits/stdc++.h>
-#include<iostream>
-#include<fstream>
+#include <iostream>
+#include <fstream>
+#include <map>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <stack>
+#include <math.h>
+#include <chrono>
 using namespace std;
-struct fib_Node//fibonacci heap node structure;
+using namespace std::chrono;
+struct fib_Node
 {
-    struct fib_Node *parent,*child,*left,*right;//parent/child->pointer to parent/child node,left/right->pointer to left/right siblings
-    int value,degree;//value-> node value, degree->degree of the node in the heap
-    string hash_tag;//hash_tag->hash tag
-    bool mark;//mark->is its child cut
-    fib_Node(int val,string hash_tag){//initialize the structure with values
-        this->value=val;this->hash_tag=hash_tag;
-        this->parent=this->child=NULL;
-        this->left=this->right=this;
-        this->degree=0;this->mark=false;
+    bool mark;
+    int value, degree;
+    struct fib_Node *left, *right, *parent, *child;
+    string hashTag;
+    fib_Node(int val, string hashTag)
+    {
+        this->value = val;
+        this->degree = 0;
+        this->mark = false;
+        this->left = this->right = this;
+        this->parent = this->child = NULL;
+        this->hashTag = hashTag;
     }
 };
-int no_of_nodes=0;//current number of nodes in the heap
-struct fib_Node* maxPtr=NULL;//pointer to the maximum valued node in the heap
-map<string,struct fib_Node*> tags;//consists of pointer to respective node by hash tag
-void printHeap(struct fib_Node* head){
+int no_of_nodes = 0, lines = 0;
+struct fib_Node *maxPtr = NULL;
+map<string, struct fib_Node *> tags;
+void linkSiblings(fib_Node *a, fib_Node *b)
+{
+    a->right->left = b->left;
+    b->left->right = a->right;
+    a->right = b;
+    b->left = a;
+}
+fib_Node *maxNode(fib_Node *head)
+{
     if (head == NULL)
-        return;
-    struct fib_Node *t = head;
-    do
     {
-        if (t->degree == 0){
-            cout << "Child" << t->value << " " << t->hash_tag << endl;
+        return NULL;
+    }
+    int max = head->value;
+    fib_Node *m = head, *temp = head->left;
+    while (temp != head)
+    {
+        if (max < temp->value)
+        {
+            max = temp->value;
+            m = temp;
         }
-        else{
-            cout << "Parent:" << t->value << " with degree" << t->degree << " " << t->hash_tag << endl;
-            printHeap(t->child);
-            cout << "Parent:" << t->value << "End" << endl;
-        }
-        t = t->left;
-    } while (t != head);
+        temp = temp->left;
+    }
+    return m;
 }
-void insert(int value,string hash_tag){
-    struct fib_Node* n=new fib_Node(value,hash_tag);
+void insert(int val, string tag)
+{
+    fib_Node *n = new fib_Node(val, tag);
     no_of_nodes++;
-    tags[hash_tag]=n;
-    if(maxPtr==NULL){
-        maxPtr=n;//if heap is empty make new node as heap and maxptr
-    }else{//inserting n to right side of the current max pointer
-        maxPtr->right->left=n;
-        n->right=maxPtr->right;
-        maxPtr->right=n;
-        n->left=maxPtr;
-        if(maxPtr->value<n->value){//if current max pointer value is less than n then set n as new max Pointer
-            maxPtr=n;
+    tags[tag] = n;
+    if (maxPtr == NULL)
+    {
+        maxPtr = n;
+    }
+    else
+    {
+        linkSiblings(maxPtr, n);
+        if (n->value > maxPtr->value)
+        {
+            maxPtr = n;
         }
     }
 }
-struct fib_Node* meld(struct fib_Node* a,struct fib_Node* b){//melds the two heaps of same degree into a single heap of degree+1
-    //cout<<"Meld: "<<a->value<<" of degree "<<a->degree<<" and "<<b->value<<" of degree "<<b->degree<<endl;
-    if(b->value>a->value){//if value of b node is greater than a then swap a and b
-        struct fib_Node* temp=a;
-        a=b;
-        b=temp;
+fib_Node *meld(fib_Node *a, fib_Node *b)
+{
+    if (a->value < b->value)
+    {
+        return meld(b, a);
     }
-    a->degree++;//increase the degree of a
-    b->parent=a;//set b parent pointer to a
-    if(a->child==NULL){
-        a->child=b;//if a doesnt have a child set a child pointer to b
-    }else{//add b as a sibling to a's childs
-        a->child->right->left=b;
-        b->right=a->child->right;
-        a->child->right=b;
-        b->left=a->child;
-        if(a->child->value<b->value){
-            a->child=b;//value of b is greater than a's child then set a's child pointer to b
+    else
+    {
+        a->degree++;
+        a->parent = NULL;
+        b->parent = a;
+        if (a->child == NULL)
+        {
+            a->child = b;
         }
-    }
-    //cout<<"Meld done "<<a->value<<" of degree "<<a->degree<<endl;
-    return a;
-}
-void pairWiseCombine(vector<struct fib_Node*> &sib){
-    int n=sib.size(),max_degree=(log(no_of_nodes+1)/log(2))+1;
-    bool* b=(bool*)calloc(sizeof(bool),max_degree);
-    struct fib_Node** aux=(struct fib_Node**)malloc(sizeof(struct fib_Node*)*max_degree);//stores all the top level nodes
-    for(int i=0;i<n;i++){
-        sib[i]->left=sib[i]->right=sib[i];
-        if(!b[sib[i]->degree]){//if there are no heaps of sib[i]->degree
-            b[sib[i]->degree]=true;
-            aux[sib[i]->degree]=sib[i];
-        }else{//if there exsits two heaps of same degree
-            b[sib[i]->degree]=false;
-            struct fib_Node* x=meld(sib[i],aux[sib[i]->degree]);//preform meld operation
-            while(b[x->degree]){//if there exsisrs two heaps of same degree
-                b[x->degree]=false;
-                x=meld(x,aux[x->degree]);//perform meld operation
-            }
-            b[x->degree]=true;
-            aux[x->degree]=x;
-        }
-    }
-    int max=INT_MIN;
-    for(int i=0;i<max_degree;i++){
-        if(b[i]){
-            if(aux[i]->value>max){
-                max=aux[i]->value;maxPtr=aux[i];//maxPtr is pointed to the max valued top level nodes
+        else
+        {
+            linkSiblings(a->child, b);
+            if (b->value > a->child->value)
+            {
+                a->child = b;
             }
         }
+        return a;
     }
-    for(int i=0;i<max_degree;i++){//top level siblings are joined together by a double linked lists
-        if(b[i]&&maxPtr!=aux[i]){
-            maxPtr->right->left=aux[i];
-            aux[i]->right=maxPtr->right;
-            maxPtr->right=aux[i];
-            aux[i]->left=maxPtr;
-        }
-    }
-
 }
-void removeMax(){//removes the maxvalued node from the heap
-    if(maxPtr==NULL){
-        cout<<"Heap is Empty"<<endl;
-        return;
-    }
-    //cout<<"Hash tag "<<maxPtr->hash_tag<<" with value "<<maxPtr->value<<" of degree "<<maxPtr->degree<<" is deleted from heap."<<endl;
-    no_of_nodes--;//decrement the total number of nodes by 1
-    tags.erase(maxPtr->hash_tag);//remove the hashtag from the tags hashmap
-    if(maxPtr->left==maxPtr){//if max valued node doesnt have any siblings then remove max node and make its child as max pointer
-        maxPtr=maxPtr->child;
-    }else{
-        struct fib_Node *temp=maxPtr;
-        vector<struct fib_Node*> siblings;//will store the siblings and childs of maxPtr
-        while(temp->left!=maxPtr){//get all siblings of maxPtr
-            siblings.push_back(temp->left);temp=temp->left;
-        }
-        if(maxPtr->degree>0){//get all childs of maxPtr
-            temp=maxPtr->child;
-            siblings.push_back(temp);
-            while(temp->left!=maxPtr->child){
-                siblings.push_back(temp->left);temp=temp->left;
+void consolidate(vector<fib_Node *> &topNodes)
+{
+    if (!topNodes.empty())
+    {
+        vector<fib_Node *> Nodes(30, NULL);
+        vector<bool> b(30, false);
+        maxPtr = topNodes[0];
+        b[topNodes[0]->degree] = true;
+        Nodes[topNodes[0]->degree] = topNodes[0];
+        for (int i = 1; i < topNodes.size(); i++)
+        {
+            fib_Node *a = topNodes[i];
+            while (b[a->degree])
+            {
+                b[a->degree] = false;
+                a = meld(a, Nodes[a->degree]);
             }
+            b[a->degree] = true;
+            Nodes[a->degree] = a;
         }
-        pairWiseCombine(siblings);//perform pairwise combine on all siblings array
-    }
-}
-void cut(struct fib_Node* c,struct fib_Node* p){//remove a child from parent and insert the child in the toplevel node
-    //cout<<"Cut parent "<<p->value<<" and child "<<c->value<<endl;
-    p->degree--;//reducing the degree of the parent node as we are removing a child from the parent
-    if(p->child==c){//if parents child pointer is pointing to this child
-        if(c->left==c){//if child doesn't have any sibilings
-            c->parent->child=NULL;//makes parents child node to null
-        }else{//if child has siblings
-            c->left->right=c->right;
-            c->right->left=c->left;
-            struct fib_Node* temp=c->left;
-            int max=temp->value;p->child=temp;
-            while(temp->left!=c->left){
-                if(max<temp->left->value){
-                    p->child=temp->left;//set next highest valued sibling as a child to the parent
-                    temp=temp->left;
+        stack<fib_Node *> stack;
+        int max = 0;
+        for (int i = 0; i < 30; i++)
+        {
+            if (b[i])
+            {
+                stack.push(Nodes[i]);
+                if (max < Nodes[i]->value)
+                {
+                    maxPtr = Nodes[i];
+                    max = Nodes[i]->value;
                 }
             }
         }
-    }else{
-        c->left->right=c->right;
-        c->right->left=c->left;
-    }
-    c->parent=NULL;
-    maxPtr->right->left=c;
-    c->right=maxPtr->right;
-    maxPtr->right=c;
-    c->left=maxPtr;
-    if(maxPtr->value<c->value){
-        maxPtr=c;//if the cut child has higher value than maxPtr value then set maxPtr to cut child
-    }
-    c->mark=true;
-    //cout<<"Cut Done"<<endl;
-}
-void cascadeCut(struct fib_Node* head){
-    //cout<<"CascadeCut on "<<head->value<<endl;
-    struct fib_Node* temp = head->parent; 
-    if (temp != NULL) { //if parent is not null
-        if (!head->mark) { //if this parent ever lost a child
-            head->mark = true; 
-        } 
-        else { 
-            cut(head, temp); 
-            cascadeCut(temp); 
-        } 
-    }
-    //cout<<"cascade cut done on "<<head->value<<endl;
-}
-void increaseKey(string hash_tag,int increaseby){//increases the hashtag count for a hashtag
-    struct fib_Node* head=tags[hash_tag];
-    //cout<<"Increase Key of "<<hash_tag<<" from "<<head->value<<" to "<<head->value+increaseby<<endl;
-    head->value+=increaseby;
-    if(head->parent==NULL){//if the node is at the top level
-        if(maxPtr->value<head->value){
-            maxPtr=head;//if node value is greater than the current maxPtr value then maxPtr is pointed to the current node
+        fib_Node *a = stack.top();
+        stack.pop();
+        while (!stack.empty())
+        {
+            fib_Node *x = stack.top();
+            stack.pop();
+            linkSiblings(a, x);
         }
-    }else{
-        if(head->parent->value>head->value){//if heap condition is satisfied between parent and child even if child value is increased
-            if(head->parent->child->value<head->value){//if sibling value is less than the current node value after node value is increased
-                head->parent->child=head;//parents child is set to current node
+    }
+    else
+    {
+        maxPtr = NULL;
+    }
+}
+void removeMax()
+{
+    if (maxPtr == NULL)
+    {
+        cout << "Heap is empty" << endl;
+    }
+    else
+    {
+        tags.erase(maxPtr->hashTag);
+        no_of_nodes--;
+        vector<fib_Node *> topNodes;
+        fib_Node *temp;
+        if (maxPtr->child != NULL)
+        {
+            temp = maxPtr->child;
+            topNodes.push_back(temp);
+            temp = temp->right;
+            while (temp != maxPtr->child)
+            {
+                topNodes.push_back(temp);
+                temp = temp->right;
             }
-        }else{//if heap condition not satisfied between parent and child after child value is increased
-            struct fib_Node* p=head->parent;
-            cut(head,p);
-            cascadeCut(p);
         }
+        temp = maxPtr->left;
+        while (temp != maxPtr)
+        {
+            topNodes.push_back(temp);
+            temp = temp->left;
+        }
+        for (int i = 0; i < topNodes.size(); i++)
+        {
+            topNodes[i]->left = topNodes[i]->right = topNodes[i];
+            topNodes[i]->parent = NULL;
+            topNodes[i]->mark = false;
+        }
+        consolidate(topNodes);
     }
-    //cout<<"Increase Key done"<<endl;
 }
-string topXNodes(int x){//returns a string with top x hashtags comma seperated
-    string res="";
-    vector<pair<string,int> > ele;
-    for(int i=0;i<x;i++){
-        pair<string,int> p;
-	if(maxPtr!=NULL){
-        	p.first=maxPtr->hash_tag;
-        	p.second=maxPtr->value;
-        	ele.push_back(p);
-        	removeMax();//removes the most popular hashtag
-	}else{break;}
-    }
-    for(int i=0;i<ele.size();i++){
-        if(res!=""){
-            res+=',';
+string topXNodes(int x)
+{
+    string res = "";
+    vector<pair<string, int>> list;
+    for (int i = 0; i < x; i++)
+    {
+        pair<string, int> p;
+        if (maxPtr == NULL)
+        {
+            break;
         }
-        res+=ele[i].first;
-        insert(ele[i].second,ele[i].first);//inserts all the hashtags into heap after picking top x hashtags
+        else
+        {
+            p.first = maxPtr->hashTag;
+            p.second = maxPtr->value;
+            if (res != "")
+            {
+                res += ',';
+            }
+            res += p.first;
+            list.push_back(p);
+            removeMax();
+        }
+    }
+    for (int i = 0; i < list.size(); i++)
+    {
+        insert(list[i].second, list[i].first);
     }
     return res;
 }
+void cut(fib_Node *ch, fib_Node *pa)
+{
+    pa->degree--;
+    if (ch->left == ch)
+    {
+        pa->child = NULL;
+    }
+    else
+    {
+        ch->left->right = ch->right;
+        ch->right->left = ch->left;
+        if (pa->child == ch)
+        {
+            pa->child = maxNode(ch->left);
+        }
+    }
+    ch->left = ch->right = ch;
+    ch->parent = NULL;
+    ch->mark = false;
+    linkSiblings(maxPtr, ch);
+}
+void cascadeCut(fib_Node *pa)
+{
+    fib_Node *ppa = pa->parent;
+    if (ppa != NULL)
+    {
+        if (!pa->mark)
+        {
+            pa->mark = true;
+        }
+        else
+        {
+            cut(pa, ppa);
+            cascadeCut(ppa);
+        }
+    }
+    else
+    {
+        pa->mark = false;
+    }
+}
+void increaseKey(int val, string tag)
+{
+    fib_Node *head = tags[tag];
+    head->value += val;
+    if (head->parent == NULL)
+    {
+        if (head->value > maxPtr->value)
+        {
+            maxPtr = head;
+        }
+    }
+    else
+    {
+        if (head->parent->value > head->value)
+        {
+            if (head->parent->child->value < head->value)
+            {
+                head->parent->child = head;
+            }
+        }
+        else
+        {
+            fib_Node *p = head->parent;
+            cut(head, p);
+            cascadeCut(p);
+        }
+    }
+    if (head->value > maxPtr->value)
+    {
+        maxPtr = head;
+    }
+}
 
-int main(int argc, char** argv){//driver function
-    ifstream input;ofstream output;
-    string s="";
-    input.open(argv[1]);//opens the file name given as an argument and reads input from the file
-    output.open("output_file.txt");//writes output to output_file.txt
-	while(input>>s){
-		if(s[0]=='#'){//if input starts with # 
-			int x;
-			input>>x;
-            s=s.substr(1,s.length()-1);
-			if(tags[s]!=NULL){//if hashtag already exsists in heap then increaseKey function is invoked.
-				increaseKey(s,x);
-			}else{//if hashtag doesnt exsist in heap insert function is invoked
-				insert(x,s);
-			}
-		}else if(s=="stop"){//if input encounters "stop" program execution is exited.
+int main(int argc, char **argv)
+{
+    ifstream input;
+    ofstream output;
+    string s = "";
+    input.open(argv[1]);
+    //input.open("input_1000.txt");
+    output.open("output_file.txt");
+    auto start = high_resolution_clock::now();
+    while (input >> s)
+    {
+        lines++;
+        if (s[0] == '#')
+        {
+            int x;
+            input >> x;
+            s = s.substr(1, s.length() - 1);
+            if (tags[s] != NULL)
+            {
+                increaseKey(x, s);
+            }
+            else
+            {
+                insert(x, s);
+            }
+        }
+        else if (s == "stop")
+        {
             input.close();
             output.close();
-			return 0;
-		}else{//if input is an integer topXNodes function is invoked and returns top X hashtags
+            break;
+        }
+        else
+        {
             stringstream geek(s);
-			int x=0;
-            geek>>x;//converts string to integer
-			output<<topXNodes(x)<<endl;
-            //cout<<"***************************************MAX HEAP***********************************************"<<endl;
-            //printHeap(maxPtr);
-            //cout<<"***************************************MAX HEAP***********************************************"<<endl;
-		}
-	}
+            int x = 0;
+            geek >> x;
+            output << topXNodes(x) << endl;
+        }
+    }
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << "Time taken for execution: " << duration.count() << " microseconds" << endl;
+    cout << "DONE" << endl;
 }
