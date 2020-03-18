@@ -21,7 +21,7 @@ struct fib_Node {
 		this->hashTag = hashTag;
 	}
 };
-int no_of_nodes = 0,lines=0;
+int no_of_nodes = 0,lines=0;bool fline=true;
 struct fib_Node* maxPtr = NULL;
 map<string, struct fib_Node*> tags;
 void linkSiblings(fib_Node* a, fib_Node* b) {
@@ -249,7 +249,8 @@ int main(int argc, char** argv) {
 			stringstream geek(s);
 			int x = 0;
 			geek >> x;
-			output << topXNodes(x) << endl;		
+			if(fline){output << topXNodes(x);fline=false;}
+			else{output <<endl<< topXNodes(x);}	
 		}
 	}
 	end=clock();
