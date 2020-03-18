@@ -222,8 +222,8 @@ void increaseKey(int val, string tag) {
 int main(int argc, char** argv) {
 	ifstream input; ofstream output;
 	string s = "";
-	//input.open(argv[1]);
-	input.open("input_1000.txt");
+	input.open(argv[1]);
+	//input.open("input_1000.txt");
 	output.open("output_file.txt");
 	clock_t start, end;
 	start=clock();
